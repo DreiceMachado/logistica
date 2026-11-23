@@ -44,7 +44,11 @@ require 'includes/cabecalho.php';
 
 <?php if (count($transportadores) == 0 || count($enderecos) < 2 || count($listaProdutos) == 0) { ?>
     <div class="alert alert-warning">
-        Para gerar um frete precisa ter pelo menos 1 transportador, 2 endereços e 1 produto cadastrados.
+        Para gerar um frete precisa ter pelo menos 1 transportador, 2 endereços (origem e destino) e 1 produto cadastrados.<br>
+        Hoje tem: <?= count($transportadores) ?> transportador(es), <?= count($enderecos) ?> endereço(s) e <?= count($listaProdutos) ?> produto(s).
+        <?php if (count($enderecos) < 2) { ?>
+            <a href="enderecos.php">Cadastrar endereço</a>
+        <?php } ?>
     </div>
 <?php } else { ?>
     <div class="card">
