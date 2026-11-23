@@ -13,7 +13,3 @@ Feito com PHP, MySQL, HTML, CSS, JavaScript e Bootstrap.
 3. Importar o arquivo `banco/banco.sql` no phpMyAdmin
 4. Acessar `http://localhost/logistica`
 
-## Aluno
-
-Nome:  
-RA:
