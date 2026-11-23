@@ -6,15 +6,11 @@ $qtdEnderecos = $pdo->query('SELECT COUNT(*) FROM enderecos')->fetchColumn();
 $qtdTransportadores = $pdo->query('SELECT COUNT(*) FROM transportadores')->fetchColumn();
 $qtdFretes = $pdo->query('SELECT COUNT(*) FROM fretes')->fetchColumn();
 
-// o botao gerar frete leva pro que ainda falta cadastrar
-if ($qtdProdutos == 0) {
-    $linkFrete = 'produtos.php';
-} elseif ($qtdEnderecos < 2) {
-    $linkFrete = 'enderecos.php';
-} elseif ($qtdTransportadores == 0) {
-    $linkFrete = 'transportadores.php';
-} else {
-    $linkFrete = 'fretes.php';
+// cancelar o passo a passo do frete
+if (isset($_GET['cancelar'])) {
+    unset($_SESSION['frete']);
+    header('Location: index.php');
+    exit;
 }
 
 $titulo = 'Início';
@@ -78,7 +74,7 @@ require 'includes/cabecalho.php';
     </div>
 </div>
 
-<a href="<?= $linkFrete ?>" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Gerar frete</a>
+<a href="produtos.php?iniciar=1" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Gerar frete</a>
 <a href="relatorio.php" class="btn btn-dark"><i class="bi bi-file-earmark-text"></i> Relatório</a>
 
 <?php require 'includes/rodape.php'; ?>

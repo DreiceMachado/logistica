@@ -1,6 +1,26 @@
 <?php
 require 'config/conexao.php';
 
+// comeca o passo a passo do frete (botao gerar frete do inicio)
+if (isset($_GET['iniciar'])) {
+    $_SESSION['frete'] = ['produtos' => [], 'enderecos' => [], 'transportador' => ''];
+    header('Location: produtos.php');
+    exit;
+}
+
+// escolher ou tirar um produto do frete
+if (isset($_GET['usar']) && isset($_SESSION['frete'])) {
+    $pos = array_search($_GET['usar'], $_SESSION['frete']['produtos']);
+    if ($pos === false) {
+        $_SESSION['frete']['produtos'][] = $_GET['usar'];
+    } else {
+        unset($_SESSION['frete']['produtos'][$pos]);
+        $_SESSION['frete']['produtos'] = array_values($_SESSION['frete']['produtos']);
+    }
+    header('Location: produtos.php');
+    exit;
+}
+
 // salvar (se tiver id edita, se nao tiver cadastra)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nome = $_POST['nome'];
@@ -14,6 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $stmt = $pdo->prepare('INSERT INTO produtos (nome, descricao, peso, valor) VALUES (?, ?, ?, ?)');
         $stmt->execute([$nome, $descricao, $peso, $valor]);
+
+        // se estiver gerando frete, o produto novo ja fica escolhido
+        if (isset($_SESSION['frete'])) {
+            $_SESSION['frete']['produtos'][] = $pdo->lastInsertId();
+        }
     }
 
     header('Location: produtos.php?ok=1');
@@ -44,6 +69,27 @@ $lista = $pdo->query('SELECT * FROM produtos ORDER BY nome')->fetchAll();
 
 $titulo = 'Produtos';
 require 'includes/cabecalho.php';
+
+if (isset($_SESSION['frete'])) {
+    $escolhidos = [];
+    foreach ($lista as $item) {
+        if (in_array($item['id'], $_SESSION['frete']['produtos'])) {
+            $escolhidos[] = limpar($item['nome']);
+        }
+    }
+
+    $etapa = 1;
+    if (count($escolhidos) > 0) {
+        $textoAssistente = 'Produtos escolhidos: <strong>' . implode(', ', $escolhidos) . '</strong>';
+    } else {
+        $textoAssistente = 'Cadastre um produto ou clique em <strong>Escolher</strong> nos que já existem.';
+    }
+    $podeAvancar = count($escolhidos) > 0;
+    $voltar = '';
+    $proximo = 'enderecos.php';
+    $textoBotao = 'Próximo';
+    require 'includes/assistente.php';
+}
 ?>
 
 <div class="row">
@@ -105,6 +151,13 @@ require 'includes/cabecalho.php';
                             <td><?= $item['peso'] ?> kg</td>
                             <td><?= dinheiro($item['valor']) ?></td>
                             <td>
+                                <?php if (isset($_SESSION['frete'])) { ?>
+                                    <?php if (in_array($item['id'], $_SESSION['frete']['produtos'])) { ?>
+                                        <a href="produtos.php?usar=<?= $item['id'] ?>" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Escolhido</a>
+                                    <?php } else { ?>
+                                        <a href="produtos.php?usar=<?= $item['id'] ?>" class="btn btn-sm btn-outline-success">Escolher</a>
+                                    <?php } ?>
+                                <?php } ?>
                                 <a href="produtos.php?editar=<?= $item['id'] ?>" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
                                 <a href="produtos.php?excluir=<?= $item['id'] ?>" class="btn btn-sm btn-outline-danger" title="Excluir" onclick="return confirm('Deseja excluir?')"><i class="bi bi-trash"></i></a>
                             </td>

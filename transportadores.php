@@ -1,6 +1,17 @@
 <?php
 require 'config/conexao.php';
 
+// escolher o transportador do frete (so pode um)
+if (isset($_GET['usar']) && isset($_SESSION['frete'])) {
+    if ($_SESSION['frete']['transportador'] == $_GET['usar']) {
+        $_SESSION['frete']['transportador'] = '';
+    } else {
+        $_SESSION['frete']['transportador'] = $_GET['usar'];
+    }
+    header('Location: transportadores.php');
+    exit;
+}
+
 // salvar (se tiver id edita, se nao tiver cadastra)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nome = $_POST['nome'];
@@ -15,6 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $stmt = $pdo->prepare('INSERT INTO transportadores (nome, cnpj, telefone, veiculo, placa) VALUES (?, ?, ?, ?, ?)');
         $stmt->execute([$nome, $cnpj, $telefone, $veiculo, $placa]);
+
+        if (isset($_SESSION['frete'])) {
+            $_SESSION['frete']['transportador'] = $pdo->lastInsertId();
+        }
     }
 
     header('Location: transportadores.php?ok=1');
@@ -46,6 +61,27 @@ $veiculos = ['Moto', 'Carro', 'Van', 'Caminhão'];
 
 $titulo = 'Transportadores';
 require 'includes/cabecalho.php';
+
+if (isset($_SESSION['frete'])) {
+    $escolhido = '';
+    foreach ($lista as $item) {
+        if ($item['id'] == $_SESSION['frete']['transportador']) {
+            $escolhido = limpar($item['nome'] . ' (' . $item['veiculo'] . ')');
+        }
+    }
+
+    $etapa = 3;
+    if ($escolhido != '') {
+        $textoAssistente = 'Transportador: <strong>' . $escolhido . '</strong>';
+    } else {
+        $textoAssistente = 'Cadastre um transportador ou clique em <strong>Escolher</strong> em um que já existe.';
+    }
+    $podeAvancar = $escolhido != '';
+    $voltar = 'enderecos.php';
+    $proximo = 'fretes.php';
+    $textoBotao = 'Gerar frete';
+    require 'includes/assistente.php';
+}
 ?>
 
 <div class="row">
@@ -115,6 +151,13 @@ require 'includes/cabecalho.php';
                             <td><?= limpar($item['telefone']) ?></td>
                             <td><?= limpar($item['veiculo']) ?> (<?= limpar($item['placa']) ?>)</td>
                             <td>
+                                <?php if (isset($_SESSION['frete'])) { ?>
+                                    <?php if ($_SESSION['frete']['transportador'] == $item['id']) { ?>
+                                        <a href="transportadores.php?usar=<?= $item['id'] ?>" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Escolhido</a>
+                                    <?php } else { ?>
+                                        <a href="transportadores.php?usar=<?= $item['id'] ?>" class="btn btn-sm btn-outline-success">Escolher</a>
+                                    <?php } ?>
+                                <?php } ?>
                                 <a href="transportadores.php?editar=<?= $item['id'] ?>" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
                                 <a href="transportadores.php?excluir=<?= $item['id'] ?>" class="btn btn-sm btn-outline-danger" title="Excluir" onclick="return confirm('Deseja excluir?')"><i class="bi bi-trash"></i></a>
                             </td>

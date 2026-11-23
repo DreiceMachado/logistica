@@ -1,6 +1,21 @@
 <?php
 require 'config/conexao.php';
 
+// escolher ou tirar um endereco do frete (o primeiro e a origem, o segundo o destino)
+if (isset($_GET['usar']) && isset($_SESSION['frete'])) {
+    $pos = array_search($_GET['usar'], $_SESSION['frete']['enderecos']);
+    if ($pos === false) {
+        if (count($_SESSION['frete']['enderecos']) < 2) {
+            $_SESSION['frete']['enderecos'][] = $_GET['usar'];
+        }
+    } else {
+        unset($_SESSION['frete']['enderecos'][$pos]);
+        $_SESSION['frete']['enderecos'] = array_values($_SESSION['frete']['enderecos']);
+    }
+    header('Location: enderecos.php');
+    exit;
+}
+
 // salvar (se tiver id edita, se nao tiver cadastra)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $cep = $_POST['cep'];
@@ -16,6 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $stmt = $pdo->prepare('INSERT INTO enderecos (cep, rua, numero, bairro, cidade, estado) VALUES (?, ?, ?, ?, ?, ?)');
         $stmt->execute([$cep, $rua, $numero, $bairro, $cidade, $estado]);
+
+        if (isset($_SESSION['frete']) && count($_SESSION['frete']['enderecos']) < 2) {
+            $_SESSION['frete']['enderecos'][] = $pdo->lastInsertId();
+        }
     }
 
     header('Location: enderecos.php?ok=1');
@@ -46,6 +65,32 @@ $lista = $pdo->query('SELECT * FROM enderecos ORDER BY cidade')->fetchAll();
 
 $titulo = 'Endereços';
 require 'includes/cabecalho.php';
+
+if (isset($_SESSION['frete'])) {
+    // monta o texto na ordem que foi escolhido
+    $escolhidos = [];
+    foreach ($_SESSION['frete']['enderecos'] as $id) {
+        foreach ($lista as $item) {
+            if ($item['id'] == $id) {
+                $escolhidos[] = limpar($item['rua'] . ', ' . $item['numero'] . ' - ' . $item['cidade'] . '/' . $item['estado']);
+            }
+        }
+    }
+
+    $etapa = 2;
+    if (count($escolhidos) == 0) {
+        $textoAssistente = 'Escolha o endereço de <strong>origem</strong> (cadastre um novo ou clique em Escolher).';
+    } elseif (count($escolhidos) == 1) {
+        $textoAssistente = 'Origem: <strong>' . $escolhidos[0] . '</strong><br>Agora escolha o endereço de <strong>destino</strong>.';
+    } else {
+        $textoAssistente = 'Origem: <strong>' . $escolhidos[0] . '</strong><br>Destino: <strong>' . $escolhidos[1] . '</strong>';
+    }
+    $podeAvancar = count($escolhidos) == 2;
+    $voltar = 'produtos.php';
+    $proximo = 'transportadores.php';
+    $textoBotao = 'Próximo';
+    require 'includes/assistente.php';
+}
 ?>
 
 <div class="row">
@@ -114,6 +159,15 @@ require 'includes/cabecalho.php';
                             <td><?= limpar($item['cidade']) ?>/<?= limpar($item['estado']) ?></td>
                             <td><?= limpar($item['cep']) ?></td>
                             <td>
+                                <?php if (isset($_SESSION['frete'])) { ?>
+                                    <?php if (in_array($item['id'], $_SESSION['frete']['enderecos'])) { ?>
+                                        <a href="enderecos.php?usar=<?= $item['id'] ?>" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-lg"></i> <?= $_SESSION['frete']['enderecos'][0] == $item['id'] ? 'Origem' : 'Destino' ?>
+                                        </a>
+                                    <?php } elseif (count($_SESSION['frete']['enderecos']) < 2) { ?>
+                                        <a href="enderecos.php?usar=<?= $item['id'] ?>" class="btn btn-sm btn-outline-success">Escolher</a>
+                                    <?php } ?>
+                                <?php } ?>
                                 <a href="enderecos.php?editar=<?= $item['id'] ?>" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
                                 <a href="enderecos.php?excluir=<?= $item['id'] ?>" class="btn btn-sm btn-outline-danger" title="Excluir" onclick="return confirm('Deseja excluir?')"><i class="bi bi-trash"></i></a>
                             </td>
