@@ -1,0 +1,85 @@
+body {
+    background-color: #e4e4e4;
+    font-family: 'Inter', sans-serif;
+    color: #2b2f38;
+}
+
+/* menu */
+.navbar {
+    background-color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    color: #000 !important;
+}
+
+.navbar .nav-link {
+    color: #000 !important;
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 6px 14px !important;
+    margin: 3px;
+    font-weight: 500;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+    background-color: #d4d4d4;
+    border: 1px solid #a0a0a0;
+}
+
+.navbar .nav-link.active {
+    font-weight: 600;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #fff;
+    font-weight: 600;
+    padding: 14px 18px;
+}
+
+.table th {
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+/* cores dos cards do inicio */
+.card-azul {
+    background-color: #6ea8fe;
+}
+
+.card-verde {
+    background-color: #75b798;
+}
+
+.card-amarelo {
+    background-color: #ffda6a;
+}
+
+.card-vermelho {
+    background-color: #ea868f;
+}
+
+.icone {
+    font-size: 32px;
+    color: #000;
+}
+
+.linha-produto {
+    margin-bottom: 8px;
+}
+
+footer {
+    font-size: 14px;
+}
