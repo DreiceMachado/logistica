@@ -20,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->execute([$freteId, $produtos[$i], $quantidades[$i]]);
         }
 
+        // terminou o passo a passo
+        unset($_SESSION['frete']);
+
         header('Location: fretes.php?ok=1');
         exit;
     }
@@ -38,8 +41,37 @@ $enderecos = $pdo->query('SELECT * FROM enderecos ORDER BY cidade')->fetchAll();
 $listaProdutos = $pdo->query('SELECT * FROM produtos ORDER BY nome')->fetchAll();
 $fretes = buscarFretes($pdo);
 
+// o que foi escolhido no passo a passo ja vem selecionado no formulario
+$escolhaTransportador = '';
+$escolhaOrigem = '';
+$escolhaDestino = '';
+$escolhaProdutos = [''];
+
+if (isset($_SESSION['frete'])) {
+    $escolhaTransportador = $_SESSION['frete']['transportador'];
+    if (isset($_SESSION['frete']['enderecos'][0])) {
+        $escolhaOrigem = $_SESSION['frete']['enderecos'][0];
+    }
+    if (isset($_SESSION['frete']['enderecos'][1])) {
+        $escolhaDestino = $_SESSION['frete']['enderecos'][1];
+    }
+    if (count($_SESSION['frete']['produtos']) > 0) {
+        $escolhaProdutos = $_SESSION['frete']['produtos'];
+    }
+}
+
 $titulo = 'Fretes';
 require 'includes/cabecalho.php';
+
+if (isset($_SESSION['frete'])) {
+    $etapa = 4;
+    $textoAssistente = 'Confira os dados abaixo, coloque a data, o valor e a quantidade de cada produto e clique em <strong>Gerar frete</strong>.';
+    $podeAvancar = false;
+    $voltar = 'transportadores.php';
+    $proximo = '';
+    $textoBotao = '';
+    require 'includes/assistente.php';
+}
 ?>
 
 <?php if (count($transportadores) == 0 || count($enderecos) < 2 || count($listaProdutos) == 0) { ?>
@@ -60,7 +92,7 @@ require 'includes/cabecalho.php';
                         <label class="form-label">Transportador</label>
                         <select name="transportador_id" class="form-select">
                             <?php foreach ($transportadores as $t) { ?>
-                                <option value="<?= $t['id'] ?>"><?= limpar($t['nome']) ?> (<?= limpar($t['veiculo']) ?>)</option>
+                                <option value="<?= $t['id'] ?>" <?php if ($t['id'] == $escolhaTransportador) echo 'selected'; ?>><?= limpar($t['nome']) ?> (<?= limpar($t['veiculo']) ?>)</option>
                             <?php } ?>
                         </select>
                     </div>
@@ -68,7 +100,7 @@ require 'includes/cabecalho.php';
                         <label class="form-label">Origem</label>
                         <select name="origem_id" class="form-select">
                             <?php foreach ($enderecos as $end) { ?>
-                                <option value="<?= $end['id'] ?>"><?= limpar($end['rua']) ?>, <?= limpar($end['numero']) ?> - <?= limpar($end['cidade']) ?>/<?= limpar($end['estado']) ?></option>
+                                <option value="<?= $end['id'] ?>" <?php if ($end['id'] == $escolhaOrigem) echo 'selected'; ?>><?= limpar($end['rua']) ?>, <?= limpar($end['numero']) ?> - <?= limpar($end['cidade']) ?>/<?= limpar($end['estado']) ?></option>
                             <?php } ?>
                         </select>
                     </div>
@@ -76,7 +108,7 @@ require 'includes/cabecalho.php';
                         <label class="form-label">Destino</label>
                         <select name="destino_id" class="form-select">
                             <?php foreach ($enderecos as $end) { ?>
-                                <option value="<?= $end['id'] ?>"><?= limpar($end['rua']) ?>, <?= limpar($end['numero']) ?> - <?= limpar($end['cidade']) ?>/<?= limpar($end['estado']) ?></option>
+                                <option value="<?= $end['id'] ?>" <?php if ($end['id'] == $escolhaDestino) echo 'selected'; ?>><?= limpar($end['rua']) ?>, <?= limpar($end['numero']) ?> - <?= limpar($end['cidade']) ?>/<?= limpar($end['estado']) ?></option>
                             <?php } ?>
                         </select>
                     </div>
@@ -94,21 +126,23 @@ require 'includes/cabecalho.php';
 
                 <h6 class="fw-bold mt-2">Produtos do frete</h6>
                 <div id="lista-produtos">
-                    <div class="row linha-produto">
-                        <div class="col-7">
-                            <select name="produtos[]" class="form-select">
-                                <?php foreach ($listaProdutos as $p) { ?>
-                                    <option value="<?= $p['id'] ?>"><?= limpar($p['nome']) ?></option>
-                                <?php } ?>
-                            </select>
+                    <?php foreach ($escolhaProdutos as $escolhido) { ?>
+                        <div class="row linha-produto">
+                            <div class="col-7">
+                                <select name="produtos[]" class="form-select">
+                                    <?php foreach ($listaProdutos as $p) { ?>
+                                        <option value="<?= $p['id'] ?>" <?php if ($p['id'] == $escolhido) echo 'selected'; ?>><?= limpar($p['nome']) ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <input type="number" name="quantidades[]" class="form-control" min="1" value="1">
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-outline-danger" title="Remover" onclick="removerProduto(this)"><i class="bi bi-x-lg"></i></button>
+                            </div>
                         </div>
-                        <div class="col-3">
-                            <input type="number" name="quantidades[]" class="form-control" min="1" value="1">
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-outline-danger" title="Remover" onclick="removerProduto(this)"><i class="bi bi-x-lg"></i></button>
-                        </div>
-                    </div>
+                    <?php } ?>
                 </div>
                 <button type="button" class="btn btn-outline-success btn-sm mb-4" onclick="adicionarProduto()"><i class="bi bi-plus-lg"></i> Adicionar produto</button>
 
